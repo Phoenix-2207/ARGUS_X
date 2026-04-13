@@ -2,22 +2,22 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install system deps for ML packages
+# Install minimal system deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc g++ && rm -rf /var/lib/apt/lists/*
+    gcc && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy and install slim requirements (no torch/sentence-transformers = ~1.5GB image)
+COPY requirements-deploy.txt .
+RUN pip install --no-cache-dir -r requirements-deploy.txt
 
-# Copy entire project
+# Copy project
 COPY . .
 
 # Set working directory to backend
 WORKDIR /app/argus/backend
 
-# Railway sets PORT env var dynamically
+# Railway sets PORT dynamically
 ENV PORT=8000
 
-# Start uvicorn — use shell form so $PORT gets expanded
+# Start
 CMD python -m uvicorn main:app --host 0.0.0.0 --port $PORT
