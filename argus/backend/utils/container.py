@@ -167,7 +167,7 @@ class ServiceContainer:
 
         # L5: AI vs AI Battle
         red = RedTeamAgent(db, self.firewall, self.correlator)
-        blue = BlueAgent(self.firewall, self.mutator, self.fingerprinter)
+        blue = BlueAgent(self.firewall, self.mutator, self.fingerprinter, db)
         self.register("red_agent", red)
         self.register("blue_agent", blue)
         self.register("battle", BattleEngine(red, blue, db))

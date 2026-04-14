@@ -53,7 +53,7 @@ export function useStatsPoller(): void {
         blocked: data.blocked || data.stats?.blocked || 0,
         muts: data.mutations_preblocked || data.stats?.mutations_preblocked || 0,
         bypasses: data.stats?.bypasses_found || data.bypasses_found || 0,
-        patched: data.blue_agent?.auto_patches || data.stats?.bypasses_found || 0,
+        patched: data.blue_agent?.auto_patches || 0,
         loading: false,
       });
 
