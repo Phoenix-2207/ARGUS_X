@@ -2,8 +2,22 @@
 ARGUS-X — Analytics Router
 Endpoints: /stats, /logs, /heatmap
 """
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Query
 from datetime import datetime
+
+# Rate limiting (graceful — no-op if slowapi not installed)
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+    limiter = Limiter(key_func=get_remote_address)
+except ImportError:
+    limiter = None
+
+
+def _rate_limit(limit_string: str):
+    if limiter:
+        return limiter.limit(limit_string)
+    return lambda f: f
 
 router = APIRouter()
 
@@ -46,6 +60,7 @@ async def get_stats(request: Request):
         "defense_rate": defense_rate,
         "protect_pct": protect_pct,
         "mutations_preblocked": mutations_total + app.state.firewall.get_dynamic_rules_count(),
+        "bypasses_found": stats.get("bypasses_found", 0),
         
         # Nested details
         "stats": stats,
@@ -67,8 +82,9 @@ async def get_stats(request: Request):
 
 
 @router.get("/analytics/logs")
-async def get_logs(request: Request, limit: int = 50):
-    """Get recent event logs."""
+@_rate_limit("60/minute")
+async def get_logs(request: Request, limit: int = Query(default=50, ge=1, le=500)):
+    """Get recent event logs. Capped at 500 to prevent abuse."""
     events = await request.app.state.db.get_recent_events(limit)
     return {"events": events, "count": len(events)}
 
@@ -88,7 +104,8 @@ async def get_threat_summary(request: Request):
 
 
 @router.get("/analytics/orgs")
-async def get_org_stats(request: Request, limit: int = 50):
+@_rate_limit("30/minute")
+async def get_org_stats(request: Request, limit: int = Query(default=50, ge=1, le=200)):
     """
     Multi-Tenant View — Group attacks by org_id.
 

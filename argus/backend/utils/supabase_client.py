@@ -57,12 +57,20 @@ class SupabaseClient:
                 if anon_key:
                     self._read_client = create_client(url, anon_key)
                     log.info("✅ Supabase read client connected (anon — RLS enforced)")
+                elif os.getenv("ENV", "development").lower() == "production":
+                    # SECURITY: In production, NEVER fall back to service key for reads.
+                    # This would bypass RLS and expose all data.
+                    log.error(
+                        "🚨 SUPABASE_ANON_KEY not set in production — reads DISABLED. "
+                        "Set SUPABASE_ANON_KEY to enable read operations with RLS."
+                    )
+                    self._read_client = None
                 else:
-                    # Graceful degradation: use write client for reads in dev/demo
+                    # Dev/demo only: use write client with warning
                     self._read_client = self._write_client
                     log.warning(
                         "⚠️ SUPABASE_ANON_KEY not set — reads will use service role key "
-                        "(RLS bypassed). Set SUPABASE_ANON_KEY for production security."
+                        "(RLS bypassed). This is ONLY acceptable in development."
                     )
 
                 self.available = True
@@ -317,16 +325,16 @@ class SupabaseClient:
     # ── Dynamic Rules ─────────────────────────────────────────────────────────
 
     async def add_dynamic_rule(self, pattern: str, threat_type: str, source: str = "MUTATION_ENGINE"):
-        """Add a dynamic firewall rule."""
+        """Add a dynamic firewall rule. Deduplicates by pattern via UPSERT."""
         try:
             if self.available:
                 await self._run_sync(
-                    lambda: self._write_client.table("dynamic_rules").insert({
+                    lambda: self._write_client.table("dynamic_rules").upsert({
                         "pattern": pattern[:500],
                         "threat_type": threat_type,
                         "source": source,
                         "active": True,
-                    }).execute()
+                    }, on_conflict="pattern").execute()
                 )
         except Exception as e:
             log.warning(f"Dynamic rule add failed: {e}")

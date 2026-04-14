@@ -4,6 +4,7 @@ Full 9-layer security pipeline: Firewall → LLM → Auditor → Fingerprint →
 Mutation → XAI → Evolution → Clustering → Correlation → Supabase Realtime
 """
 import os
+import re
 import time
 import uuid
 import hashlib
@@ -11,7 +12,7 @@ import html
 from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 # Rate limiting (graceful — no-op if slowapi not installed)
 try:
@@ -32,15 +33,42 @@ router = APIRouter()
 
 # Server-side only: demo bypass. NEVER expose this via the public API.
 # Operator must explicitly set DEMO_BYPASS_ENABLED=true in environment.
-DEMO_BYPASS_ENABLED = os.getenv("DEMO_BYPASS_ENABLED", "false").lower() == "true"
+# SECURITY: Force-disabled when ENV=production regardless of flag.
+_ENV = os.getenv("ENV", "development").lower()
+_demo_raw = os.getenv("DEMO_BYPASS_ENABLED", "false").lower() == "true"
+DEMO_BYPASS_ENABLED = _demo_raw and _ENV != "production"
+if _demo_raw and _ENV == "production":
+    import logging
+    logging.getLogger("argus.security").critical(
+        "🚨 DEMO_BYPASS_ENABLED=true IGNORED — blocked in production mode"
+    )
+
+
+# SECURITY: Allowed characters for user-facing string fields.
+# Rejects control chars, HTML tags, and SQL injection markers.
+_SAFE_ID_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.@]{1,64}$')
 
 
 class ChatRequest(BaseModel):
     message: str = Field(..., max_length=10000, description="User message (max 10000 chars)")
-    user_id: str = "anonymous"
-    session_id: str = ""
-    org_id: str = Field(default="default", max_length=64, description="Organization ID for multi-tenant isolation")
+    user_id: str = Field(default="anonymous", max_length=64)
+    session_id: str = Field(default="", max_length=64)
+    # SECURITY: org_id is derived server-side, never from client input.
     context: list = Field(default=[], max_length=10, description="Conversation context (max 10 items)")
+
+    @field_validator('user_id')
+    @classmethod
+    def validate_user_id(cls, v: str) -> str:
+        if v and not _SAFE_ID_PATTERN.match(v):
+            return "anonymous"  # Silently sanitize to prevent injection
+        return v
+
+    @field_validator('session_id')
+    @classmethod
+    def validate_session_id(cls, v: str) -> str:
+        if v and not _SAFE_ID_PATTERN.match(v):
+            return ""  # Silently sanitize
+        return v
 
 
 class ChatResponse(BaseModel):
@@ -63,7 +91,9 @@ class ChatResponse(BaseModel):
 def _build_event(user_id, session_id, message, action, threat_type,
                  score, layer, latency, method, sophistication=0,
                  fingerprint=None, mutations=0, explanation=None,
-                 session_threat_level="LOW", org_id="default"):
+                 session_threat_level="LOW"):
+    # SECURITY: org_id is always server-derived, never from client.
+    org_id = "default"
     # SECURITY: Never expose raw attack payloads in event previews.
     # CLEAN events are safe to preview (benign input); threats are redacted.
     if action in ("BLOCKED", "SANITIZED"):
@@ -121,7 +151,6 @@ async def chat(req: ChatRequest, request: Request):
         ev = _build_event(
             req.user_id, sid, req.message, "DEMO_BYPASS",
             None, 0, "NONE", elapsed, "DEMO_BYPASS",
-            org_id=req.org_id
         )
         await app.state.db.log_event(ev)
         return ChatResponse(
@@ -170,7 +199,7 @@ async def chat(req: ChatRequest, request: Request):
             req.user_id, sid, req.message, "BLOCKED",
             fw["threat_type"], fw["score"], "INPUT", elapsed,
             fw.get("method", ""), sophistication, fingerprint, mutations,
-            explanation, session_level, org_id=req.org_id
+            explanation, session_level
         )
 
         # ── LAYER 1: DATABASE + REALTIME ─────────────────────────────────
@@ -222,7 +251,7 @@ async def chat(req: ChatRequest, request: Request):
             req.user_id, sid, req.message, "SANITIZED",
             audit["flag_reason"], audit["confidence"], "OUTPUT",
             elapsed, "OUTPUT_AUDITOR", explanation=xai.get("primary_reason", audit.get("explanation")),
-            session_threat_level=session_level, org_id=req.org_id
+            session_threat_level=session_level
         )
         await app.state.db.log_event(ev)
         await app.state.db.increment_stat("sanitized")
@@ -254,7 +283,7 @@ async def chat(req: ChatRequest, request: Request):
     ev = _build_event(
         req.user_id, sid, req.message, "CLEAN",
         None, fw["score"], "NONE", elapsed, fw.get("method", ""),
-        session_threat_level=session_level, org_id=req.org_id
+        session_threat_level=session_level
     )
     await app.state.db.log_event(ev)
     await app.state.db.increment_stat("clean")

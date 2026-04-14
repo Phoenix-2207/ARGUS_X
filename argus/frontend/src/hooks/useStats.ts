@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { Stats, AlertEntry } from '../types';
 import { API_URL } from '../utils/config';
 import type { PatchEvent } from '../components/PatchBanner';
+import { getApiKey } from '../utils/apiKey';
 
 interface StatsState {
   stats: Stats;
@@ -21,6 +22,8 @@ interface StatsState {
   alertHistory: AlertEntry[];
   showAlertHistory: boolean;
   setShowAlertHistory: (v: boolean | ((prev: boolean) => boolean)) => void;
+  redAgentRunning: boolean;
+  loading: boolean;
 }
 
 export function useStats(): StatsState {
@@ -41,6 +44,8 @@ export function useStats(): StatsState {
   const [threatVelocity, setThreatVelocity] = useState<Record<string, number>>({});
   const [lastPatch, setLastPatch] = useState<PatchEvent | null>(null);
   const [showPatch, setShowPatch] = useState(false);
+  const [redAgentRunning, setRedAgentRunning] = useState(false);
+  const [loading, setLoading] = useState(true);
   const lastPatchTsRef = useRef<string>('');
 
   useEffect(() => {
@@ -53,7 +58,7 @@ export function useStats(): StatsState {
 
     async function poll() {
       try {
-        const apiKey = localStorage.getItem('ARGUS_API_KEY') || '';
+        const apiKey = getApiKey();
         const headers: Record<string, string> = {};
         if (apiKey) headers['X-API-Key'] = apiKey;
         const res = await fetch(`${API_URL}/api/v1/analytics/stats`, {
@@ -76,9 +81,19 @@ export function useStats(): StatsState {
           total: data.total || 0,
           blocked: data.blocked || 0,
           muts: data.mutations_preblocked || 0,
-          bypasses: data.sanitized || 0,
-          patched: data.sanitized || 0,
+          bypasses: data.stats?.bypasses_found || data.bypasses_found || 0,
+          patched: data.blue_agent?.auto_patches || data.stats?.bypasses_found || 0,
         });
+
+        // Red agent status from backend
+        if (data.agent && typeof data.agent.running === 'boolean') {
+          setRedAgentRunning(data.agent.running);
+        } else {
+          // If agent data exists at all, assume running
+          setRedAgentRunning(!!data.agent);
+        }
+
+        setLoading(false);
 
         if (data.battle) {
           setTier(data.battle.red_tier || 1);
@@ -157,5 +172,7 @@ export function useStats(): StatsState {
     alertHistory,
     showAlertHistory,
     setShowAlertHistory,
+    redAgentRunning,
+    loading,
   };
 }
