@@ -65,9 +65,12 @@ class SupabaseClient:
         }
 
     async def _run_sync(self, func, *args, **kwargs):
-        """Run synchronous supabase-py calls in executor to avoid blocking."""
+        """Run synchronous supabase-py calls in executor to avoid blocking.
+        Accepts either a zero-arg callable (lambda/closure) or func + args."""
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, partial(func, *args, **kwargs))
+        if args or kwargs:
+            return await loop.run_in_executor(None, partial(func, *args, **kwargs))
+        return await loop.run_in_executor(None, func)
 
     # ── Events ────────────────────────────────────────────────────────────────
 
@@ -122,8 +125,21 @@ class SupabaseClient:
 
     # ── Stats ─────────────────────────────────────────────────────────────────
 
+    # Valid stat columns — defense-in-depth against SQL injection.
+    # Only these column names are allowed in increment_stat().
+    _VALID_STAT_COLUMNS = frozenset({
+        "blocked", "sanitized", "clean",
+        "bypasses_found", "mutations_preblocked", "campaigns_detected",
+    })
+
     async def increment_stat(self, column: str):
-        """Atomically increment a stat column using the DB function."""
+        """Atomically increment a stat column using the DB function.
+        Column name is validated against a whitelist before execution."""
+        # Defense-in-depth: reject any column not in the whitelist
+        if column not in self._VALID_STAT_COLUMNS:
+            log.warning(f"🔒 increment_stat rejected invalid column: {column!r}")
+            return
+
         try:
             if self.available:
                 await self._run_sync(

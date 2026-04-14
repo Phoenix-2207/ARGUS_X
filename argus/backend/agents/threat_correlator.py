@@ -54,13 +54,21 @@ class ThreatCorrelator:
         self.running = True
         log.info("🔗 Threat Correlator loop started")
         
-        while True:
+        while self.running:
             try:
                 await self._analyze_patterns()
                 await asyncio.sleep(30)
+            except asyncio.CancelledError:
+                break
             except Exception as e:
                 log.error(f"Correlator error: {e}")
                 await asyncio.sleep(30)
+        log.info("🛑 Threat Correlator loop stopped")
+
+    def stop(self):
+        """Gracefully stop the correlation loop."""
+        self.running = False
+        log.info("🛑 Threat Correlator stopping")
 
     def ingest_event(self, event: dict):
         """Called by chat router after each threat event."""
@@ -81,7 +89,16 @@ class ThreatCorrelator:
             
             # Track threat type velocity (for wave detection)
             tt = event.get("threat_type", "UNKNOWN")
-            self.threat_type_velocity[tt].append(datetime.utcnow().timestamp())
+            now_ts = datetime.utcnow().timestamp()
+            self.threat_type_velocity[tt].append(now_ts)
+
+            # Prune old timestamps (keep last 24h, cap at 1000 per type)
+            cutoff_24h = now_ts - 86400  # 24 hours in seconds
+            ts_list = self.threat_type_velocity[tt]
+            if len(ts_list) > 1000:
+                self.threat_type_velocity[tt] = [
+                    t for t in ts_list if t > cutoff_24h
+                ][-1000:]
             
             # Keep window bounded
             if len(self.threat_window) > 2000:
@@ -142,13 +159,25 @@ class ThreatCorrelator:
         return [c for c in self.active_campaigns if c["status"] == "ACTIVE"]
 
     def get_threat_velocity(self) -> Dict[str, int]:
-        """Returns count of each threat type in last 10 minutes."""
-        cutoff = (datetime.utcnow() - timedelta(minutes=10)).timestamp()
+        """Returns count of each threat type in last 10 minutes.
+        Also prunes stale entries to prevent memory growth."""
+        cutoff_10m = (datetime.utcnow() - timedelta(minutes=10)).timestamp()
+        cutoff_24h = (datetime.utcnow() - timedelta(hours=24)).timestamp()
         velocity = {}
+        stale_keys = []
         for tt, timestamps in self.threat_type_velocity.items():
-            recent = [t for t in timestamps if t > cutoff]
+            # Prune entries older than 24h
+            pruned = [t for t in timestamps if t > cutoff_24h]
+            self.threat_type_velocity[tt] = pruned
+            if not pruned:
+                stale_keys.append(tt)
+                continue
+            recent = [t for t in pruned if t > cutoff_10m]
             if recent:
                 velocity[tt] = len(recent)
+        # Remove empty keys
+        for k in stale_keys:
+            del self.threat_type_velocity[k]
         return velocity
 
     def get_top_fingerprints(self, n: int = 5) -> List[dict]:

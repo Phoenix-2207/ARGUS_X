@@ -24,7 +24,7 @@ from typing import List
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -138,6 +138,10 @@ async def lifespan(app: FastAPI):
     log.info("✅ ARGUS-X fully operational — all 9 layers active")
     yield
     log.info("🔴 ARGUS-X shutting down")
+    # Graceful shutdown of all autonomous loops
+    app.state.red_agent.stop()
+    app.state.correlator.stop()
+    app.state.battle.stop()
     await app.state.session_store.close()
 
 
@@ -187,10 +191,19 @@ app.include_router(xai.router, prefix="/api/v1", tags=["xai"], dependencies=_aut
 
 # ─── WebSocket Live Feed ───────────────────────────────────────────────────────
 @app.websocket("/ws/live")
-async def ws_live_feed(ws: WebSocket):
+async def ws_live_feed(ws: WebSocket, token: str = Query(default="")):
+    # ── SECURITY: Authenticate BEFORE accepting the connection ─────────
+    # Mirrors REST API auth: if API_KEY is configured, token must match.
+    # If API_KEY is not set (dev/demo mode), access is open.
+    _expected = os.getenv("API_KEY", "")
+    if _expected and token != _expected:
+        log.warning("🔒 WebSocket rejected — invalid or missing token")
+        await ws.close(code=4003)
+        return
+
     await ws.accept()
     app.state.ws_clients.append(ws)
-    log.info(f"Dashboard connected. Total: {len(app.state.ws_clients)}")
+    log.info(f"Dashboard connected (authenticated). Total: {len(app.state.ws_clients)}")
 
     # Send last 30 events on connect
     try:
@@ -255,7 +268,7 @@ async def health():
 @app.exception_handler(Exception)
 async def global_error(req: Request, exc: Exception):
     log.error(f"Unhandled: {exc}", exc_info=True)
-    return JSONResponse(status_code=500, content={"detail": str(exc)})
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
 # ─── Frontend Serving ────────────────────────────────────────────────

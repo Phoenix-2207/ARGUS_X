@@ -3,6 +3,7 @@ ARGUS-X — Chat Router
 Full 9-layer security pipeline: Firewall → LLM → Auditor → Fingerprint →
 Mutation → XAI → Evolution → Clustering → Correlation → Supabase Realtime
 """
+import os
 import time
 import uuid
 from datetime import datetime
@@ -27,12 +28,15 @@ def _rate_limit(limit_string: str):
 
 router = APIRouter()
 
+# Server-side only: demo bypass. NEVER expose this via the public API.
+# Operator must explicitly set DEMO_BYPASS_ENABLED=true in environment.
+DEMO_BYPASS_ENABLED = os.getenv("DEMO_BYPASS_ENABLED", "false").lower() == "true"
+
 
 class ChatRequest(BaseModel):
     message: str = Field(..., max_length=10000, description="User message (max 10000 chars)")
     user_id: str = "anonymous"
     session_id: str = ""
-    sentinel_off: bool = False
     context: list = Field(default=[], max_length=10, description="Conversation context (max 10 items)")
 
 
@@ -84,16 +88,30 @@ async def chat(req: ChatRequest, request: Request):
     app = request.app
     sid = req.session_id or str(uuid.uuid4())[:8]
 
-    # ── BYPASS MODE (demo: raw unprotected LLM) ─────────────────────────
-    if req.sentinel_off:
+    # ── DEMO BYPASS MODE (server-side only, operator-controlled) ─────────
+    # This mode is ONLY active when the operator sets DEMO_BYPASS_ENABLED=true
+    # in the server environment. It is NEVER controllable by client input.
+    if DEMO_BYPASS_ENABLED:
+        import logging
+        logging.getLogger("argus.security").warning(
+            "DEMO_BYPASS active — security pipeline skipped for message from "
+            f"user={req.user_id} session={sid}"
+        )
         raw = await app.state.llm.generate(req.message)
+        elapsed = round((time.perf_counter() - t0) * 1000, 1)
+        # Log the bypass event for audit trail — never silent
+        ev = _build_event(
+            req.user_id, sid, req.message, "DEMO_BYPASS",
+            None, 0, "NONE", elapsed, "DEMO_BYPASS"
+        )
+        await app.state.db.log_event(ev)
         return ChatResponse(
             response=raw, blocked=False, sanitized=False,
             threat_score=0, threat_type=None, threat_layer=None,
             sophistication_score=0, attack_fingerprint=None,
             mutations_preblocked=0, session_threat_level="LOW",
-            explanation=None, latency_ms=round((time.perf_counter()-t0)*1000, 1),
-            session_id=sid, method="BYPASS"
+            explanation=None, latency_ms=elapsed,
+            session_id=sid, method="DEMO_BYPASS"
         )
 
     # ── LAYER 0: Session-Level Threat Assessment ─────────────────────────

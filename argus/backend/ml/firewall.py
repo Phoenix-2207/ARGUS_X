@@ -13,6 +13,9 @@ from typing import Dict, Any, List, Optional
 
 log = logging.getLogger("argus.firewall")
 
+# Maximum dynamic rules retained in memory. Oldest are evicted when exceeded.
+MAX_DYNAMIC_RULES = 500
+
 # ── Static Regex Rules ────────────────────────────────────────────────────────
 # 30+ patterns covering OWASP Top 10 LLM injection types
 STATIC_RULES = [
@@ -108,6 +111,7 @@ class InputFirewall:
     def __init__(self, models=None):
         self.models = models
         self.dynamic_rules: List[Dict[str, Any]] = []
+        self._dynamic_patterns: set = set()  # Dedup index for O(1) lookups
         self._ml_threshold = 0.87  # Confidence threshold for ML blocking
         
         # Check ML availability
@@ -236,13 +240,29 @@ class InputFirewall:
             return {"blocked": False, "score": 0, "threat_type": None, "method": "ML_ERROR"}
 
     def add_dynamic_rule(self, pattern: str, threat_type: str, severity: float = 0.85):
-        """Add a dynamic rule (from mutation engine or red team agent)."""
+        """Add a dynamic rule (from mutation engine or red team agent).
+        Deduplicates by pattern and caps total rules at MAX_DYNAMIC_RULES."""
+        # Deduplicate: skip if pattern already exists
+        pattern_key = pattern.lower().strip()
+        if pattern_key in self._dynamic_patterns:
+            return
+
+        self._dynamic_patterns.add(pattern_key)
         self.dynamic_rules.append({
             "pattern": pattern,
             "type": threat_type,
             "severity": severity,
             "source": "DYNAMIC",
         })
+
+        # Evict oldest rules if over capacity
+        if len(self.dynamic_rules) > MAX_DYNAMIC_RULES:
+            evicted = self.dynamic_rules[:len(self.dynamic_rules) - MAX_DYNAMIC_RULES]
+            self.dynamic_rules = self.dynamic_rules[-MAX_DYNAMIC_RULES:]
+            # Rebuild dedup index from remaining rules
+            self._dynamic_patterns = {
+                r.get("pattern", "").lower().strip() for r in self.dynamic_rules
+            }
 
     def tighten_threshold(self, delta: float = 0.05):
         """Reduce ML threshold (makes firewall stricter)."""

@@ -24,6 +24,10 @@ class EvolutionTracker:
         self.trend_windows: List[float] = []  # Average per window
         self.escalation_count = 0
         self.last_avg = 0.0
+        # Cached result for should_tighten_firewall (avoid recomputation per request)
+        self._tighten_cache: bool = False
+        self._tighten_cache_ts: float = 0.0
+        self._TIGHTEN_CACHE_TTL: float = 30.0  # seconds
         log.info("✅ Evolution Tracker initialized")
 
     def record(self, sophistication_score: int, threat_type: str, tier: int = 0):
@@ -106,9 +110,15 @@ class EvolutionTracker:
         }
 
     def should_tighten_firewall(self) -> bool:
-        """Returns True if firewall threshold should be tightened."""
+        """Returns True if firewall threshold should be tightened.
+        Result is cached for 30s to avoid recomputing on every request."""
+        now = time.time()
+        if now - self._tighten_cache_ts < self._TIGHTEN_CACHE_TTL:
+            return self._tighten_cache
         report = self.get_evolution_report()
-        return report["is_escalating"] and self.escalation_count >= 3
+        self._tighten_cache = report["is_escalating"] and self.escalation_count >= 3
+        self._tighten_cache_ts = now
+        return self._tighten_cache
 
     def get_sparkline_data(self, points: int = 30) -> List[float]:
         """Get last N average scores for sparkline visualization."""

@@ -4,9 +4,12 @@ Orchestrates AI vs AI battle between Red Agent and Blue Agent.
 Broadcasts battle state to Supabase Realtime every tick (1.5s).
 """
 import asyncio
+import random
 import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
+
+from agents.red_team_agent import SEED_ATTACKS
 
 log = logging.getLogger("argus.battle_engine")
 
@@ -61,9 +64,6 @@ class BattleEngine:
         self.state["tick"] = self.tick
 
         # Red agent selects and tries attacks
-        from agents.red_team_agent import SEED_ATTACKS
-        import random
-        
         batch = random.sample(SEED_ATTACKS, min(5, len(SEED_ATTACKS)))
         
         for attack in batch:

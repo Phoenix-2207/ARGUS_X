@@ -702,7 +702,14 @@ export default function CommandCenter() {
 
     function connect() {
       try {
-        ws = new WebSocket(`${WS_URL}/ws/live`);
+        // Pass API key as token query param (mirrors REST X-API-Key auth)
+        const apiKey = typeof window !== 'undefined'
+          ? localStorage.getItem('ARGUS_API_KEY') || ''
+          : '';
+        const wsUrl = apiKey
+          ? `${WS_URL}/ws/live?token=${encodeURIComponent(apiKey)}`
+          : `${WS_URL}/ws/live`;
+        ws = new WebSocket(wsUrl);
       } catch (err) { return; }
 
       ws.onopen = () => { retries = 0; };
@@ -786,8 +793,8 @@ export default function CommandCenter() {
           total: data.total || 0,
           blocked: data.blocked || 0,
           muts: data.mutations_preblocked || 0,
-          bypasses: data.sanitized || 0,
-          patched: data.sanitized || 0,
+          bypasses: data.agent?.bypasses_found || 0,
+          patched: data.agent?.bypasses_found || 0,
         });
         setLastUpdated(new Date());
 
@@ -808,7 +815,7 @@ export default function CommandCenter() {
           if (latest && latest.detected_at) {
             const age = Date.now() - new Date(latest.detected_at).getTime();
             if (age < 10000) {
-              const msg = `CAMPAIGN DETECTED: ${(latest.pattern || "UNKNOWN").replace(/_/g, " ")} · ${latest.event_count || "?"} events from ${latest.source_count || "?"} unique sources`;
+              const msg = `CAMPAIGN DETECTED: ${(latest.threat_type || "UNKNOWN").replace(/_/g, " ")} · ${latest.events_count || "?"} events from ${latest.unique_users || "?"} unique sources`;
               setShowAlert(true);
               setAlertMsg(msg);
               setAlertHistory(prev => [{ ts: new Date().toLocaleTimeString("en-US", { hour12: false }), msg }, ...prev.slice(0, 19)]);

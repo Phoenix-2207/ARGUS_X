@@ -33,7 +33,14 @@ export function useRealtimeFeed(): RealtimeFeedState {
 
     function connect() {
       try {
-        ws = new WebSocket(`${WS_URL}/ws/live`);
+        // Pass API key as token query param (mirrors REST X-API-Key auth)
+        const apiKey = typeof window !== 'undefined'
+          ? localStorage.getItem('ARGUS_API_KEY') || ''
+          : '';
+        const wsUrl = apiKey
+          ? `${WS_URL}/ws/live?token=${encodeURIComponent(apiKey)}`
+          : `${WS_URL}/ws/live`;
+        ws = new WebSocket(wsUrl);
       } catch {
         return;
       }
