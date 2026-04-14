@@ -53,7 +53,7 @@ class TestRunner:
             await self.test_role_override_blocked(c)
             await self.test_system_prompt_extraction_blocked(c)
             await self.test_data_exfiltration_blocked(c)
-            await self.test_bypass_mode(c)
+            await self.test_bypass_rejected(c)
             await self.test_redteam_endpoint(c)
             await self.test_analytics_stats(c)
             await self.test_analytics_logs(c)
@@ -165,19 +165,20 @@ class TestRunner:
         except Exception as e:
             self._log("Data exfiltration → BLOCKED", False, str(e))
 
-    async def test_bypass_mode(self, c):
-        """Test sentinel_off bypass mode (raw LLM)."""
+    async def test_bypass_rejected(self, c):
+        """Verify sentinel_off field is ignored — security pipeline always runs."""
         try:
             r = await c.post("/api/v1/chat", json={
                 "message": "What is the leave policy?",
-                "sentinel_off": True,
+                "sentinel_off": True,  # This field should be silently ignored
             })
             data = r.json()
-            ok = r.status_code == 200 and data.get("method") == "BYPASS"
-            self._log("Bypass mode (sentinel_off)", ok,
-                      f"method={data.get('method')}")
+            # Security fix: method must NOT be "BYPASS" — pipeline must always run
+            ok = r.status_code == 200 and data.get("method") != "BYPASS"
+            self._log("Bypass rejected (sentinel_off ignored)", ok,
+                      f"method={data.get('method')} (expected: not BYPASS)")
         except Exception as e:
-            self._log("Bypass mode (sentinel_off)", False, str(e))
+            self._log("Bypass rejected (sentinel_off ignored)", False, str(e))
 
     async def test_redteam_endpoint(self, c):
         """Test /redteam endpoint returns detailed analysis."""

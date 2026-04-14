@@ -117,7 +117,6 @@ async def seed(base_url: str, count: int):
             "message": random.choice(CLEAN_MESSAGES),
             "user_id": random.choice(USER_IDS),
             "session_id": random.choice(SESSION_IDS),
-            "sentinel_off": False,
         })
     
     # Fill rest with attacks
@@ -128,7 +127,6 @@ async def seed(base_url: str, count: int):
             "message": atk["message"],
             "user_id": random.choice(USER_IDS),
             "session_id": random.choice(SESSION_IDS),
-            "sentinel_off": False,
         })
     
     # Shuffle for realism

@@ -400,7 +400,7 @@ body::after{
             </div>
           </div>
           <div class="chat-bar">
-            <div class="s-toggle"><input type="checkbox" id="s-on" checked/><label for="s-on">🛡️ ARGUS ON</label></div>
+            <div class="s-toggle"><span style="color:var(--green);font-size:10px;font-family:var(--font-mono)">🛡️ ARGUS ACTIVE</span></div>
             <div class="session-level sl-low" id="session-level">SESSION: LOW</div>
           </div>
           <div class="chat-input">
@@ -744,7 +744,11 @@ function fireNeuralParticle(type, blocked) {
 // ═════════════════════════════════════════════════════════════════════
 function connectWS() {
   try {
-    const ws = new WebSocket(`ws://${_host}:8000/ws/live`);
+    const key = localStorage.getItem('ARGUS_API_KEY') || '';
+    const wsUrl = key
+      ? `ws://${_host}:8000/ws/live?token=${encodeURIComponent(key)}`
+      : `ws://${_host}:8000/ws/live`;
+    const ws = new WebSocket(wsUrl);
     ws.onopen = () => { setEl('s-ws','CONNECTED','var(--green)'); };
     ws.onmessage = (e) => {
       try {
@@ -940,17 +944,15 @@ inp.addEventListener('input',()=>{inp.style.height='auto';inp.style.height=Math.
 
 async function sendMsg(){
   const txt=inp.value.trim();if(!txt)return;
-  const bypass=!document.getElementById('s-on').checked;
   inp.value='';inp.style.height='auto';sendBtn.disabled=true;
   addMsg('user',esc(txt));
   const thinking=addMsg('bot','<span class="spin"></span>');
   try{
-    const r=await apiFetch(`${API}/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:txt,sentinel_off:bypass})});
+    const r=await apiFetch(`${API}/chat`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:txt})});
     const d=await r.json();
     thinking.remove();
     let cls='bot',badges=[];
-    if(bypass){badges.push(`<span class="mbadge mb-bypass">⚠️ UNPROTECTED</span>`);}
-    else if(d.blocked){cls='blocked';badges.push(`<span class="mbadge mb-blocked">⛔ BLOCKED · ${d.threat_type}</span>`);if(d.sophistication_score)badges.push(`<span class="mbadge" style="background:rgba(213,0,249,.12);color:var(--purple)">SOPHIST: ${d.sophistication_score}/10</span>`);if(d.mutations_preblocked)badges.push(`<span class="mbadge" style="background:rgba(213,0,249,.08);color:var(--purple)">+${d.mutations_preblocked} VARIANTS</span>`);}
+    if(d.blocked){cls='blocked';badges.push(`<span class="mbadge mb-blocked">⛔ BLOCKED · ${d.threat_type}</span>`);if(d.sophistication_score)badges.push(`<span class="mbadge" style="background:rgba(213,0,249,.12);color:var(--purple)">SOPHIST: ${d.sophistication_score}/10</span>`);if(d.mutations_preblocked)badges.push(`<span class="mbadge" style="background:rgba(213,0,249,.08);color:var(--purple)">+${d.mutations_preblocked} VARIANTS</span>`);}
     else if(d.sanitized){cls='sanitized';badges.push(`<span class="mbadge mb-sanitized">⚠️ SANITIZED · ${d.threat_type}</span>`);}
     else{badges.push(`<span class="mbadge mb-clean">ARGUS CLEAN</span>`);}
     badges.push(`<span style="font-family:monospace;font-size:8px;color:var(--muted)">${d.latency_ms?.toFixed(0)||'?'}ms</span>`);
