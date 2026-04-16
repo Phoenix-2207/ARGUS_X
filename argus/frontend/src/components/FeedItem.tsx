@@ -8,39 +8,42 @@ interface FeedItemProps {
 }
 
 function FeedItemInner({ attack }: FeedItemProps) {
-  const color = THREAT_COLORS[attack.type] || '#ff1744';
+  const color = THREAT_COLORS[attack.type] || '#DC2626';
   const action = attack.blocked ? 'BLOCKED' : 'PARTIAL';
-  const actionColor = attack.blocked ? '#ff1744' : '#ffab00';
+  const actionColor = attack.blocked ? '#0D9B8A' : '#D97706';
+
   return (
     <div
-      className="py-[7px] px-2.5 rounded-[5px] bg-[#080c1a] border border-argus-border animate-slide-left shrink-0"
-      style={{ borderLeft: `2px solid ${color}` }}
+      className="bg-argus-panel border border-argus-border rounded-[6px] py-[10px] px-[12px] animate-slide-up shrink-0 hover:bg-argus-input transition-colors duration-150"
+      style={{ borderLeft: `3px solid ${color}` }}
     >
-      <div className="flex items-center gap-1.5 mb-0.5">
+      <div className="flex items-center gap-2 mb-1">
         <div
-          className="py-px px-1.5 rounded-[3px] font-mono text-[8px] font-bold"
+          className="py-px px-1.5 rounded-[4px] font-mono text-[10px] font-medium"
           style={{
-            background: `${actionColor}18`,
+            background: `${actionColor}1F`, /* ~12% opacity */
             color: actionColor,
-            border: `1px solid ${actionColor}30`,
+            border: `1px solid ${actionColor}`,
           }}
         >
           {action}
         </div>
-        <div className="font-mono text-[8px]" style={{ color }}>
+        <div className="font-display font-medium text-[11px] text-argus-secondary">
           {attack.type.replace(/_/g, ' ')}
         </div>
-        <div className="ml-auto font-mono text-[8px] text-argus-dim">
+        <div className="ml-auto font-mono text-[10px] text-argus-dim">
           {attack.latency}ms
         </div>
       </div>
-      <div className="font-mono text-[9px] text-[#4a6080] whitespace-nowrap overflow-hidden text-ellipsis">
+      <div className="font-mono text-[11px] text-argus-muted whitespace-nowrap overflow-hidden text-ellipsis mb-2">
         {attack.text.slice(0, 58)}
       </div>
-      <div className="flex items-center gap-1.5 mt-1">
-        <SophMeter score={attack.soph} />
+      <div className="flex items-center gap-2 mt-1">
+        <div className="flex-1">
+          <SophMeter score={attack.soph} />
+        </div>
         {attack.muts > 0 && (
-          <span className="font-mono text-[8px] text-[#4a1a80]">
+          <span className="font-mono text-[10px] text-argus-purple shrink-0">
             +{attack.muts} variants
           </span>
         )}

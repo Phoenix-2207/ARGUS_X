@@ -3,42 +3,45 @@
    Design tokens, keyframes, scrollbar, responsive grid
    ═══════════════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Barlow:wght@300;400;600;700;900&family=Orbitron:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
-/* ── ARGUS Design Tokens ───────────────────────────────────────────── */
+/* ── ARGUS-X Enterprise Design Tokens ──────────────────────────────── */
 @theme {
   /* Background colors */
-  --color-argus-bg: #030508;
-  --color-argus-panel: #080d1c;
-  --color-argus-input: #0d1830;
-  --color-argus-border: #1a2845;
-  --color-argus-glass: rgba(5, 9, 20, 0.98);
+  --color-argus-bg: #F0F4F8;
+  --color-argus-panel: #FFFFFF;
+  --color-argus-input: #EBF0F6;
+  --color-argus-border: #D1DCE8;
+  --color-argus-border-strong: #B8C9D9;
+  --color-argus-glass: rgba(255, 255, 255, 0.98);
 
   /* Accent colors */
-  --color-argus-cyan: #00e5ff;
-  --color-argus-purple: #d500f9;
-  --color-argus-green: #00e676;
-  --color-argus-red: #ff1744;
-  --color-argus-orange: #ff6d00;
-  --color-argus-amber: #ffab00;
-  --color-argus-pink: #ff4081;
+  --color-argus-blue: #1A73E8;
+  --color-argus-teal: #0D9B8A;
+  --color-argus-amber: #D97706;
+  --color-argus-red: #DC2626;
+  --color-argus-purple: #7C3AED;
+  --color-argus-indigo: #4338CA;
+  --color-argus-green: #16A34A;
+  --color-argus-orange: #EA580C;
 
   /* Text colors */
-  --color-argus-text: #ddeeff;
-  --color-argus-muted: #3a5070;
-  --color-argus-dim: #2a4060;
+  --color-argus-text: #0F1C2E;
+  --color-argus-secondary: #3A5A78;
+  --color-argus-muted: #6B8BA4;
+  --color-argus-dim: #9DB4C8;
 
   /* Fonts */
-  --font-mono: 'Share Tech Mono', monospace;
-  --font-display: 'Orbitron', monospace;
-  --font-body: 'Barlow', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
 
   /* Animations */
-  --animate-pulse-dot: pulse 1.4s ease-in-out infinite;
-  --animate-pulse-fast: pulse 0.7s ease-in-out infinite;
-  --animate-slide-left: slideLeft 0.3s ease-out;
-  --animate-slide-up: slideUp 0.3s ease-out;
+  --animate-pulse-dot: pulse 1.8s ease-in-out infinite;
+  --animate-pulse-fast: pulse 0.9s ease-in-out infinite;
+  --animate-slide-left: slideLeft 0.2s ease-out;
+  --animate-slide-up: slideUp 0.15s ease-out;
   --animate-spin: spin 0.8s linear infinite;
   --animate-slide-alert: slideInAlert 0.4s ease-out;
 }
@@ -46,15 +49,18 @@
 /* ── Reset ─────────────────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  margin: 5;
+  padding: 4;
 }
 
 html, body, #root {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: #030508;
+  background: var(--color-argus-bg);
+  color: var(--color-argus-text);
+  font-family: var(--font-body);
+  font-size: 13px;
 }
 
 /* ── Keyframes ─────────────────────────────────────────────────────── */
@@ -64,13 +70,13 @@ html, body, #root {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.4; transform: scale(0.65); }
+  50%      { opacity: 0.6; transform: scale(0.85); }
 }
 
 @keyframes slideInAlert {
@@ -89,29 +95,37 @@ html, body, #root {
 
 /* ── Scrollbar ─────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 3px;
+  width: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EBF0F6;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1a2845;
-  border-radius: 2px;
+  background: #B8C9D9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9DB4C8;
 }
 
 /* ── Responsive Grid ───────────────────────────────────────────────── */
 .argus-grid {
-  grid-template-columns: minmax(180px, 240px) 1fr minmax(180px, 220px);
-  grid-template-rows: 1fr minmax(140px, 180px);
+  grid-template-columns: minmax(280px, 320px) 1fr minmax(280px, 340px);
+  grid-template-rows: 1fr minmax(180px, 220px);
 }
 
 @media (max-width: 1024px) {
   .argus-grid {
-    grid-template-columns: minmax(160px, 200px) 1fr;
-    grid-template-rows: 1fr minmax(120px, 160px) auto;
+    grid-template-columns: minmax(240px, 280px) 1fr;
+    grid-template-rows: 1fr minmax(140px, 180px) auto;
   }
   .argus-grid > div:nth-child(3) {
     grid-row: 3;
     grid-column: 1 / -1;
-    max-height: 300px;
+    max-height: 400px;
   }
 }
 
@@ -123,6 +137,6 @@ html, body, #root {
   .argus-grid > div {
     grid-row: auto !important;
     grid-column: auto !important;
-    max-height: 400px;
+    max-height: 500px;
   }
 }

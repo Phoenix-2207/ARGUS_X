@@ -5,20 +5,15 @@
 // ═══════════════════════════════════════════════════════════════════════
 
 import { useRef, useEffect, memo } from 'react';
-import { fonts } from '../theme';
 import { THREAT_COLORS } from '../constants';
 
-/** Maximum data points in the rolling buffer (~5 min at 3s polls) */
 const MAX_POINTS = 100;
 
 interface TimelineProps {
-  /** Current velocity snapshot: { threatType: count } */
   velocity: Record<string, number>;
-  /** Chart height in px */
   height?: number;
 }
 
-/** One snapshot in time */
 interface Snapshot {
   ts: number;
   data: Record<string, number>;
@@ -33,7 +28,6 @@ export const AttackTimeline = memo(function AttackTimeline({
   const bufferRef = useRef<Snapshot[]>([]);
   const widthRef = useRef(300);
 
-  // Track container width via ResizeObserver
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -47,18 +41,14 @@ export const AttackTimeline = memo(function AttackTimeline({
     return () => ro.disconnect();
   }, []);
 
-  // Append new velocity snapshot + redraw
   useEffect(() => {
     const buf = bufferRef.current;
-
-    // Only push a new snapshot if velocity is non-empty
     const keys = Object.keys(velocity);
     if (keys.length > 0) {
       buf.push({ ts: Date.now(), data: { ...velocity } });
       if (buf.length > MAX_POINTS) buf.splice(0, buf.length - MAX_POINTS);
     }
 
-    // Draw
     const canvas = canvasRef.current;
     if (!canvas) return;
     const w = widthRef.current;
@@ -68,26 +58,22 @@ export const AttackTimeline = memo(function AttackTimeline({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Background
-    ctx.fillStyle = '#080d1c';
+    ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, w, h);
 
     if (buf.length < 2) {
-      // Not enough data — show placeholder
-      ctx.font = `9px ${fonts.mono}`;
-      ctx.fillStyle = '#2a4060';
+      ctx.font = `11px 'JetBrains Mono', monospace`;
+      ctx.fillStyle = '#9DB4C8';
       ctx.textAlign = 'center';
       ctx.fillText('Collecting velocity data…', w / 2, h / 2);
       return;
     }
 
-    // Collect all threat types seen across the buffer
     const allTypes = new Set<string>();
     for (const snap of buf) {
       for (const t of Object.keys(snap.data)) allTypes.add(t);
     }
 
-    // Find max value for Y-axis scaling
     let maxVal = 1;
     for (const snap of buf) {
       for (const v of Object.values(snap.data)) {
@@ -103,12 +89,11 @@ export const AttackTimeline = memo(function AttackTimeline({
     const plotW = w - padLeft - padRight;
     const plotH = h - padTop - padBottom;
 
-    // Grid lines
     const gridLines = 3;
-    ctx.strokeStyle = '#0f1a30';
-    ctx.lineWidth = 0.5;
-    ctx.font = `7px ${fonts.mono}`;
-    ctx.fillStyle = '#2a4060';
+    ctx.strokeStyle = '#EBF0F6';
+    ctx.lineWidth = 1;
+    ctx.font = `10px 'JetBrains Mono', monospace`;
+    ctx.fillStyle = '#9DB4C8';
     ctx.textAlign = 'right';
     for (let i = 0; i <= gridLines; i++) {
       const y = padTop + (plotH / gridLines) * i;
@@ -117,24 +102,22 @@ export const AttackTimeline = memo(function AttackTimeline({
       ctx.lineTo(w - padRight, y);
       ctx.stroke();
       const val = Math.round(maxVal * (1 - i / gridLines));
-      ctx.fillText(String(val), padLeft - 4, y + 3);
+      ctx.fillText(String(val), padLeft - 6, y + 3);
     }
 
-    // Time labels
     const now = Date.now();
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#2a4060';
+    ctx.fillStyle = '#9DB4C8';
     for (let sec = 0; sec <= 300; sec += 60) {
       const x = padLeft + plotW - (sec / 300) * plotW;
       ctx.fillText(sec === 0 ? 'now' : `-${sec / 60}m`, x, h - 2);
     }
 
-    // Draw lines per threat type
     const types = Array.from(allTypes);
     for (const type of types) {
-      const color = THREAT_COLORS[type] || '#5a7090';
+      const color = THREAT_COLORS[type] || '#B8C9D9';
       ctx.strokeStyle = color;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 2;
       ctx.lineJoin = 'round';
       ctx.lineCap = 'round';
       ctx.beginPath();
@@ -155,34 +138,28 @@ export const AttackTimeline = memo(function AttackTimeline({
         }
       }
       ctx.stroke();
-
-      // Glow effect
-      ctx.strokeStyle = color + '30';
-      ctx.lineWidth = 4;
-      ctx.stroke();
     }
 
-    // Legend (top-right, compact)
     if (types.length > 0) {
       const legendY = padTop + 2;
       let legendX = w - padRight - 4;
-      ctx.font = `7px ${fonts.mono}`;
+      ctx.font = `10px 'JetBrains Mono', monospace`;
       ctx.textAlign = 'right';
       const legendTypes = types.slice(0, 4);
       for (let i = legendTypes.length - 1; i >= 0; i--) {
         const t = legendTypes[i];
         const label = t.slice(0, 8);
         const tw = ctx.measureText(label).width;
-        ctx.fillStyle = THREAT_COLORS[t] || '#5a7090';
-        ctx.fillRect(legendX - tw - 10, legendY + i * 10, 5, 5);
-        ctx.fillStyle = '#5a7090';
-        ctx.fillText(label, legendX, legendY + i * 10 + 5);
+        ctx.fillStyle = THREAT_COLORS[t] || '#6B8BA4';
+        ctx.fillRect(legendX - tw - 12, legendY + i * 14 - 3, 6, 6);
+        ctx.fillStyle = '#6B8BA4';
+        ctx.fillText(label, legendX, legendY + i * 14 + 5);
       }
     }
   }, [velocity, height]);
 
   return (
-    <div ref={containerRef} className="w-full">
+    <div ref={containerRef} className="w-full h-full bg-argus-panel">
       <canvas
         ref={canvasRef}
         className="block w-full rounded"

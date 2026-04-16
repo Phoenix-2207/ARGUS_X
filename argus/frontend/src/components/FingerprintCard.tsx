@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import { THREAT_COLORS } from '../constants';
 import type { AttackEvent } from '../types';
 
-// Sophistication signal names matching backend SOPHISTICATION_SIGNALS
 const SIGNAL_NAMES = [
   'naive_keyword', 'roleplay_frame', 'hypothetical',
   'metaphor_wrap', 'multi_step_setup', 'l33t_obfuscation',
@@ -15,9 +14,8 @@ interface FingerprintCardProps {
 }
 
 function FingerprintCardInner({ attack }: FingerprintCardProps) {
-  const color = THREAT_COLORS[attack.type] || '#ff1744';
+  const color = THREAT_COLORS[attack.type] || '#DC2626';
 
-  // Generate a deterministic fingerprint ID from attack data
   const fingerprintId = useMemo(() => {
     const taxonomy: Record<string, string> = {
       INSTRUCTION_OVERRIDE: 'A1',
@@ -34,7 +32,6 @@ function FingerprintCardInner({ attack }: FingerprintCardProps) {
     return `${prefix}-${hash}`;
   }, [attack.id, attack.type]);
 
-  // Derive which signals likely triggered based on soph + type
   const triggeredSignals = useMemo(() => {
     const active = new Set<number>();
     const soph = attack.soph;
@@ -51,42 +48,38 @@ function FingerprintCardInner({ attack }: FingerprintCardProps) {
 
   return (
     <div
-      className="bg-[#060b18] rounded-md p-2 px-2.5 animate-slide-up"
-      style={{ border: `1px solid ${color}20` }}
+      className="bg-argus-panel border border-argus-border rounded-[6px] p-3 animate-slide-up"
     >
-      {/* Fingerprint ID */}
-      <div className="flex items-center gap-2 mb-1.5">
+      <div className="flex items-center gap-2 mb-2">
         <div className="font-mono text-[10px] font-bold tracking-[0.05em]" style={{ color }}>
-          🔬 {fingerprintId}
+          <span className="opacity-70 mr-1">🔬</span> {fingerprintId}
         </div>
-        <div className="font-mono text-[8px] text-argus-muted ml-auto">
+        <div className="font-mono text-[10px] text-argus-muted ml-auto font-medium">
           SOPH {attack.soph}/10
         </div>
       </div>
 
-      {/* Signal Heatmap Grid */}
-      <div className="grid grid-cols-11 gap-0.5 mb-1">
+      <div className="grid grid-cols-11 gap-1 mb-2">
         {SIGNAL_NAMES.map((name, i) => {
           const active = triggeredSignals.has(i);
-          const intensity = active ? Math.min(0.3 + (attack.soph / 10) * 0.7, 1) : 0.05;
+          const intensity = active ? Math.min(0.2 + (attack.soph / 10) * 0.8, 1) : 0;
           return (
             <div
               key={name}
               title={name.replace(/_/g, ' ')}
-              className="w-full pt-[100%] rounded-sm transition-colors duration-300"
+              className="w-full pt-[100%] rounded-[2px] transition-colors duration-300"
               style={{
                 background: active
-                  ? `rgba(${attack.soph > 7 ? '255,23,68' : attack.soph > 4 ? '255,171,0' : '0,230,118'},${intensity})`
-                  : 'rgba(255,255,255,0.03)',
-                border: active ? `1px solid ${color}40` : '1px solid transparent',
+                  ? `rgba(${attack.soph > 7 ? '220,38,38' : attack.soph > 4 ? '217,119,6' : '13,155,138'},${intensity})`
+                  : '#EBF0F6',
+                border: active ? `1px solid rgba(${attack.soph > 7 ? '220,38,38' : attack.soph > 4 ? '217,119,6' : '13,155,138'}, 0.4)` : '1px solid transparent',
               }}
             />
           );
         })}
       </div>
 
-      {/* Signal labels */}
-      <div className="font-mono text-[7px] text-argus-dim leading-snug">
+      <div className="font-mono text-[10px] text-argus-dim leading-snug">
         {Array.from(triggeredSignals)
           .slice(0, 3)
           .map((i) => SIGNAL_NAMES[i]?.replace(/_/g, ' '))

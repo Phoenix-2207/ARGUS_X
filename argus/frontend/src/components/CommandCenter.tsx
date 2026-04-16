@@ -1,12 +1,3 @@
-// ═══════════════════════════════════════════════════════════════════════
-// ARGUS-X — DEFENSE COMMAND CENTER
-// Layer 9: The living, breathing unified system view
-// Every pixel is intentional. Every animation has meaning.
-//
-// State is sourced from Zustand store (useArgusStore).
-// Hooks (useRealtimeFeed, useStatsPoller) are side-effect-only.
-// ═══════════════════════════════════════════════════════════════════════
-
 import { useMemo } from 'react';
 import { THREAT_COLORS } from '../constants';
 import { useRealtimeFeed } from '../hooks/useRealtimeFeed';
@@ -29,11 +20,9 @@ import { FingerprintCard } from './FingerprintCard';
 import { ComplianceExport } from './ComplianceExport';
 
 export default function CommandCenter() {
-  // ── Side-effect hooks (push data into Zustand) ──────────────────
   useRealtimeFeed();
   useStatsPoller();
 
-  // ── Read from Zustand store ─────────────────────────────────────
   const attacks = useArgusStore((s) => s.attacks);
   const defenseLog = useArgusStore((s) => s.defenseLog);
   const lastUpdated = useArgusStore((s) => s.lastUpdated);
@@ -61,7 +50,6 @@ export default function CommandCenter() {
   const showPatch = useArgusStore((s) => s.showPatch);
   const toggleAlertHistory = useArgusStore((s) => s.toggleAlertHistory);
 
-  // ── Derived values ─────────────────────────────────────────────
   const blockRate = total > 0 ? Math.round((blocked / total) * 100) : 100;
   const sophAvg = sophHistory.length
     ? +(sophHistory.reduce((a, b) => a + b, 0) / sophHistory.length).toFixed(1)
@@ -75,8 +63,6 @@ export default function CommandCenter() {
 
   const canvasAttacks = useMemo(
     () => attacks.slice(0, 30),
-    // Stable key: length changes on every new event (prepend)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [attacks.length],
   );
 
@@ -91,7 +77,6 @@ export default function CommandCenter() {
       role="application"
       aria-label="ARGUS-X Defense Command Center"
     >
-      {/* ── CAMPAIGN ALERTS ── */}
       <CampaignAlert
         showAlert={effectiveShowAlert}
         alertMsg={effectiveAlertMsg}
@@ -100,60 +85,60 @@ export default function CommandCenter() {
         onToggleHistory={toggleAlertHistory}
       />
 
-      {/* ── PATCH BANNER ── */}
       <PatchBanner patch={lastPatch} visible={showPatch} />
 
       {/* ── HEADER ── */}
-      <div className="h-[50px] shrink-0 bg-argus-glass border-b border-argus-border flex items-center justify-between px-5 gap-3 flex-wrap">
+      <div className="h-[56px] shrink-0 bg-argus-panel border-b border-argus-border flex items-center justify-between px-6 gap-4 flex-wrap z-10 shadow-[0_1px_3px_rgba(15,28,46,0.03)]">
         {/* Logo */}
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-argus-cyan to-argus-purple flex items-center justify-center text-sm shadow-[0_0_14px_rgba(0,200,255,0.25)]">
-            ⚔
-          </div>
+        <div className="flex items-center gap-3">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 22S4 17.5 4 11V5l8-3 8 3v6c0 6.5-8 11-8 11z" stroke="#1A73E8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M12 8v4l3 2" stroke="#1A73E8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
           <div>
-            <div className="font-display text-[13px] font-bold text-argus-cyan tracking-[0.12em]">
-              ARGUS<span className="text-argus-purple">-X</span>
+            <div className="font-display text-[16px] font-black text-argus-text tracking-tight flex items-baseline">
+              ARGUS<span className="text-argus-blue">-X</span>
             </div>
-            <div className="font-mono text-[7px] text-argus-dim tracking-[0.2em]">
+            <div className="font-mono text-[9px] text-argus-muted tracking-widest leading-none mt-[2px]">
               DEFENSE COMMAND CENTER
             </div>
           </div>
         </div>
 
         {/* Center stats */}
-        <div className="flex gap-5 flex-wrap">
+        <div className="flex gap-2 flex-wrap flex-1 justify-center">
           {[
-            { label: 'BLOCKED', val: blocked, color: '#ff1744' },
-            { label: 'PRE-BLOCKED', val: muts, color: '#d500f9' },
-            { label: 'BYPASSES', val: bypasses, color: '#ffab00' },
-            { label: 'DEFENSE RATE', val: `${blockRate}%`, color: '#00e676' },
-            { label: 'AVG SOPH', val: `${sophAvg}/10`, color: sophAvg > 6 ? '#ff1744' : sophAvg > 4 ? '#ffab00' : '#00e676' },
-            { label: 'CAMPAIGNS', val: campaignCount, color: '#ff6d00' },
+            { label: 'BLOCKED', val: blocked, color: '#0D9B8A' },
+            { label: 'PRE-BLOCKED', val: muts, color: '#7C3AED' },
+            { label: 'BYPASSES', val: bypasses, color: '#DC2626' },
+            { label: 'DEFENSE RATE', val: `${blockRate}%`, color: '#16A34A' },
+            { label: 'AVG SOPH', val: `${sophAvg}/10`, color: sophAvg > 6 ? '#DC2626' : sophAvg > 4 ? '#D97706' : '#16A34A' },
+            { label: 'CAMPAIGNS', val: campaignCount, color: '#D97706' },
           ].map((s) => (
-            <div key={s.label} className="text-center">
-              <div className="font-display text-base font-bold leading-none" style={{ color: s.color }}>{s.val}</div>
-              <div className="font-mono text-[7px] text-argus-dim tracking-[0.15em]">{s.label}</div>
+            <div key={s.label} className="bg-argus-bg border border-argus-border rounded-[20px] px-3 py-1 flex justify-between items-center gap-3">
+              <span className="font-display text-[22px] font-bold leading-none translate-y-[1px]" style={{ color: s.color }}>{s.val}</span>
+              <span className="font-mono text-[9px] text-argus-muted uppercase tracking-wider leading-none mt-[2px]">{s.label}</span>
             </div>
           ))}
         </div>
 
         {/* Status pills */}
-        <div className="flex gap-2" role="status" aria-live="polite">
+        <div className="flex gap-3" role="status" aria-live="polite">
           {[
             connected
-              ? { color: '#00e676', label: 'ARGUS ONLINE', fast: false }
-              : { color: '#ffab00', label: 'RECONNECTING…', fast: true },
+              ? { color: '#16A34A', bg: '#F0FDF4', border: '#86EFAC', label: 'ARGUS ONLINE', fast: false }
+              : { color: '#D97706', bg: '#FFFBEB', border: '#FDE68A', label: 'RECONNECTING…', fast: true },
             redAgentRunning
-              ? { color: '#ff1744', label: 'RED AGENT LIVE', fast: true }
-              : { color: '#3a5070', label: 'RED AGENT IDLE', fast: false },
+              ? { color: '#DC2626', bg: '#FEF2F2', border: '#FECACA', label: 'RED AGENT LIVE', fast: true }
+              : { color: '#6B8BA4', bg: '#F0F4F8', border: '#D1DCE8', label: 'RED AGENT IDLE', fast: false },
           ].map((p) => (
             <div
               key={p.label}
               aria-label={p.label}
-              className="flex items-center gap-[5px] py-[3px] px-2.5 rounded-xl font-mono text-[8px]"
+              className="flex items-center gap-2 py-1 px-3 rounded-[20px] font-mono text-[10px] font-medium transition-colors duration-300"
               style={{
-                background: p.color + '12',
-                border: `1px solid ${p.color}30`,
+                background: p.bg,
+                border: `1px solid ${p.border}`,
                 color: p.color,
               }}
             >
@@ -161,37 +146,36 @@ export default function CommandCenter() {
                 className="w-1.5 h-1.5 rounded-full"
                 style={{
                   background: p.color,
-                  animation: p.fast ? 'pulse 0.7s ease-in-out infinite' : 'none',
-                  opacity: p.fast ? undefined : 0.6,
+                  animation: p.fast ? 'pulse 0.9s ease-in-out infinite' : 'pulse 1.8s ease-in-out infinite',
                 }}
               />
-              {p.label}
+              <span className="translate-y-[1px]">{p.label}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* ── MAIN GRID ── */}
-      <div className="argus-grid flex-1 grid gap-px bg-[#0d1628] overflow-hidden min-h-0">
+      <div className="argus-grid grid gap-3 p-3 flex-1 overflow-hidden min-h-0 bg-argus-bg">
         {/* ── LEFT: Live Feed ── */}
-        <div className="bg-argus-bg flex flex-col overflow-hidden row-span-2">
-          <div className="px-3 py-2 border-b border-argus-border shrink-0">
-            <div className="font-mono text-[8px] tracking-[0.2em] text-argus-muted flex items-center gap-1.5">
-              <div className="w-1 h-1 rounded-full bg-argus-cyan animate-pulse-dot" />
+        <div className="bg-argus-panel flex flex-col overflow-hidden row-span-2 rounded-[10px] shadow-[0_1px_3px_rgba(15,28,46,0.08),0_4px_12px_rgba(15,28,46,0.04)]">
+          <div className="px-4 py-3 border-b border-argus-input shrink-0 flex items-center">
+            <span className="inline-block w-[3px] h-[14px] bg-argus-teal mr-2"></span>
+            <div className="font-mono text-[11px] font-medium tracking-[0.12em] text-argus-secondary uppercase flex flex-1 justify-between items-center">
               LIVE THREAT FEED
               {lastUpdated && (
-                <span className="ml-auto text-[7px] text-argus-dim">
+                <span className="text-[10px] text-argus-dim tracking-normal lowercase">
                   last: {lastUpdated.toLocaleTimeString('en-US', { hour12: false })}
                 </span>
               )}
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto px-2 py-1.5 flex flex-col gap-[5px]">
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             {attacks.length === 0 ? (
-              <div className="font-mono text-[9px] text-argus-dim text-center py-5">
+              <div className="font-mono text-[11px] text-argus-dim text-center py-6">
                 {loading ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-argus-border border-t-argus-cyan rounded-full animate-spin mx-auto mb-2" />
+                    <div className="w-5 h-5 border-2 border-argus-border border-t-argus-blue rounded-full animate-spin mx-auto mb-3" />
                     Connecting to live feed…
                   </>
                 ) : (
@@ -205,16 +189,16 @@ export default function CommandCenter() {
         </div>
 
         {/* ── CENTER TOP: Neural Map + XAI ── */}
-        <div className="bg-argus-bg grid grid-cols-2 gap-px overflow-hidden">
+        <div className="grid grid-cols-2 gap-3 overflow-hidden">
           {/* Neural Threat Map */}
-          <div className="flex flex-col overflow-hidden">
-            <div className="px-3 py-2 border-b border-argus-border shrink-0">
-              <div className="font-mono text-[8px] tracking-[0.2em] text-argus-muted flex items-center gap-1.5">
-                <div className="w-1 h-1 rounded-full bg-argus-cyan" />
+          <div className="bg-argus-panel flex flex-col overflow-hidden rounded-[10px] shadow-[0_1px_3px_rgba(15,28,46,0.08),0_4px_12px_rgba(15,28,46,0.04)]">
+            <div className="px-4 py-3 border-b border-argus-input shrink-0 flex items-center">
+              <span className="inline-block w-[3px] h-[14px] bg-argus-purple mr-2"></span>
+              <div className="font-mono text-[11px] font-medium tracking-[0.12em] text-argus-secondary uppercase">
                 NEURAL THREAT MAP · LIVE
               </div>
             </div>
-            <div className="flex-1 flex items-center justify-center p-2 overflow-hidden">
+            <div className="flex-1 flex items-center justify-center p-3 overflow-hidden bg-argus-bg m-3 mb-4 rounded-[8px] border border-argus-input">
               <ErrorBoundary label="NEURAL THREAT MAP">
                 <NeuralCanvas attacks={canvasAttacks} />
               </ErrorBoundary>
@@ -222,16 +206,16 @@ export default function CommandCenter() {
           </div>
 
           {/* XAI Decision Stream */}
-          <div className="flex flex-col overflow-hidden">
-            <div className="px-3 py-2 border-b border-argus-border shrink-0">
-              <div className="font-mono text-[8px] tracking-[0.2em] text-argus-muted flex items-center gap-1.5">
-                <div className="w-1 h-1 rounded-full bg-argus-purple" />
+          <div className="bg-argus-panel flex flex-col overflow-hidden rounded-[10px] shadow-[0_1px_3px_rgba(15,28,46,0.08),0_4px_12px_rgba(15,28,46,0.04)]">
+            <div className="px-4 py-3 border-b border-argus-input shrink-0 flex items-center">
+              <span className="inline-block w-[3px] h-[14px] bg-argus-purple mr-2"></span>
+              <div className="font-mono text-[11px] font-medium tracking-[0.12em] text-argus-secondary uppercase">
                 EXPLAINABLE AI · DECISION STREAM
               </div>
             </div>
-            <div className="flex-1 overflow-y-auto px-2 py-1.5 flex flex-col gap-[5px]">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
               {attacks.slice(0, 8).filter((a) => a.blocked).map((a) => (
-                <div key={a.id} className="flex flex-col gap-1">
+                <div key={a.id} className="flex flex-col gap-2">
                   <XAICard attack={a} />
                   <FingerprintCard attack={a} />
                 </div>
@@ -241,67 +225,78 @@ export default function CommandCenter() {
         </div>
 
         {/* ── RIGHT: Analytics ── */}
-        <div className="bg-argus-bg flex flex-col overflow-hidden row-span-2">
-          <div className="px-3 py-2 border-b border-argus-border shrink-0">
-            <div className="font-mono text-[8px] tracking-[0.2em] text-argus-muted flex items-center gap-1.5">
-              <div className="w-1 h-1 rounded-full bg-argus-purple" />
-              ANALYTICS
+        <div className="bg-argus-panel flex flex-col overflow-hidden row-span-2 rounded-[10px] shadow-[0_1px_3px_rgba(15,28,46,0.08),0_4px_12px_rgba(15,28,46,0.04)]">
+          <div className="px-4 py-3 border-b border-argus-input shrink-0 flex items-center">
+            <span className="inline-block w-[3px] h-[14px] bg-argus-blue mr-2"></span>
+            <div className="font-mono text-[11px] font-medium tracking-[0.12em] text-argus-secondary uppercase">
+              ANALYTICS & REPORTS
             </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-2">
+          
+          <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
             {/* Threat level */}
-            <div className="bg-argus-panel border border-argus-border rounded-lg px-3 py-2.5">
+            <div className="bg-argus-panel border border-argus-border rounded-[10px] px-4 py-3">
               <ThreatLevelBar level={Math.round(threatLevel)} />
             </div>
 
             {/* Soph trend */}
-            <div className="bg-argus-panel border border-argus-border rounded-lg px-3 py-2.5">
-              <div className="font-mono text-[8px] text-argus-muted tracking-[0.15em] mb-[7px]">SOPHISTICATION TREND</div>
-              <div className="flex items-baseline gap-2 mb-[5px]">
-                <span className="font-display text-xl font-bold" style={{ color: sophAvg > 6 ? '#ff1744' : sophAvg > 4 ? '#ffab00' : '#00e676' }}>{sophAvg}</span>
-                <span className="font-mono text-[9px]" style={{ color: sophTrend > 0 ? '#ff1744' : '#00e676' }}>
+            <div className="bg-argus-panel border border-argus-border rounded-[10px] px-4 py-3">
+              <div className="font-mono text-[11px] text-argus-secondary font-medium tracking-[0.12em] mb-2 flex items-center border-b border-argus-input pb-1">
+                <span className="inline-block w-[3px] h-[14px] bg-argus-blue mr-2"></span>SOPHISTICATION TREND
+              </div>
+              <div className="flex items-baseline gap-2 mb-2">
+                <span className="font-display text-[28px] font-bold" style={{ color: sophAvg > 6 ? '#DC2626' : sophAvg > 4 ? '#D97706' : '#16A34A' }}>{sophAvg}</span>
+                <span className="font-mono text-[11px] font-medium" style={{ color: sophTrend > 0 ? '#DC2626' : '#16A34A' }}>
                   {sophTrend > 0 ? `↑ +${sophTrend}` : `↓ ${sophTrend}`}
                 </span>
               </div>
-              <Sparkline data={sophHistory} color={sophAvg > 6 ? '#ff1744' : sophAvg > 4 ? '#ffab00' : '#00e676'} height={40} />
-              <div className="font-mono text-[8px] text-argus-muted mt-1">
+              <Sparkline data={sophHistory} color={sophAvg > 6 ? '#DC2626' : sophAvg > 4 ? '#D97706' : '#16A34A'} height={44} />
+              <div className="font-mono text-[10px] text-argus-muted mt-2 font-medium">
                 {sophTrend > 0.5 ? '⚠ ESCALATING — tighten thresholds' : sophTrend < -0.5 ? '✓ DECLINING — defense working' : '— STABLE'}
               </div>
             </div>
 
             {/* Latency */}
-            <div className="bg-argus-panel border border-argus-border rounded-lg px-3 py-2.5">
-              <div className="font-mono text-[8px] text-argus-muted tracking-[0.15em] mb-[7px]">RESPONSE LATENCY (MS)</div>
-              <Sparkline data={latHistory} color="#00e5ff" height={40} />
-              <div className="font-mono text-[8px] text-argus-muted mt-1">
-                avg {latHistory.length ? Math.round(latHistory.reduce((a, b) => a + b, 0) / latHistory.length) : 0}ms · p99 {latHistory.length ? Math.round(Math.max(...latHistory)) : 0}ms
+            <div className="bg-argus-panel border border-argus-border rounded-[10px] px-4 py-3">
+              <div className="font-mono text-[11px] text-argus-secondary font-medium tracking-[0.12em] mb-3 flex items-center border-b border-argus-input pb-1">
+                <span className="inline-block w-[3px] h-[14px] bg-argus-blue mr-2"></span>RESPONSE LATENCY (MS)
+              </div>
+              <Sparkline data={latHistory} color="#1A73E8" height={44} />
+              <div className="font-mono text-[10px] text-argus-muted mt-2 font-medium flex justify-between">
+                <span>avg {latHistory.length ? Math.round(latHistory.reduce((a, b) => a + b, 0) / latHistory.length) : 0}ms</span>
+                <span>p99 {latHistory.length ? Math.round(Math.max(...latHistory)) : 0}ms</span>
               </div>
             </div>
 
             {/* AI Battle */}
-            <div className="bg-argus-panel border border-argus-border rounded-lg px-3 py-2.5">
-              <div className="font-mono text-[8px] text-argus-muted tracking-[0.15em] mb-[7px]">AI vs AI BATTLE</div>
+            <div className="bg-argus-panel border border-argus-border rounded-[10px] px-4 py-3">
               <ErrorBoundary label="AI BATTLE">
                 <BattleStatus redAtks={total} blueBlocks={blocked} redBypasses={bypasses} tier={tier} />
               </ErrorBoundary>
             </div>
 
             {/* Cluster map */}
-            <div className="bg-argus-panel border border-argus-border rounded-lg px-3 py-2.5">
-              <div className="font-mono text-[8px] text-argus-muted tracking-[0.15em] mb-[7px]">THREAT CLUSTERS</div>
+            <div className="bg-argus-panel border border-argus-border rounded-[10px] px-4 py-3">
+              <div className="font-mono text-[11px] text-argus-secondary font-medium tracking-[0.12em] mb-2 flex items-center border-b border-argus-input pb-1">
+                <span className="inline-block w-[3px] h-[14px] bg-argus-blue mr-2"></span>THREAT CLUSTERS
+              </div>
               <ErrorBoundary label="THREAT CLUSTERS">
-                <MiniClusterMap attacks={canvasAttacks} />
+                <div className="border border-argus-input rounded-[8px] overflow-hidden mt-2 mb-2 p-1 relative">
+                  <MiniClusterMap attacks={canvasAttacks} />
+                </div>
               </ErrorBoundary>
-              <div className="font-mono text-[8px] text-argus-muted mt-1">
+              <div className="font-mono text-[10px] text-argus-muted mt-1 font-medium">
                 {Object.keys(THREAT_COLORS).length} cluster families active
               </div>
             </div>
 
             {/* Mutation counter */}
-            <div className="bg-argus-panel border border-argus-border rounded-lg px-3 py-2.5">
-              <div className="font-mono text-[8px] text-argus-muted tracking-[0.15em] mb-[5px]">MUTATION ENGINE</div>
-              <div className="font-display text-2xl font-bold text-argus-purple leading-none">{muts}</div>
-              <div className="font-mono text-[8px] text-argus-muted mt-[3px]">variants pre-blocked · zero human input</div>
+            <div className="bg-argus-panel border border-argus-border rounded-[10px] px-4 py-3">
+              <div className="font-mono text-[11px] text-argus-secondary font-medium tracking-[0.12em] mb-1 flex items-center border-b border-argus-input pb-1">
+                <span className="inline-block w-[3px] h-[14px] bg-argus-purple mr-2"></span>MUTATION ENGINE
+              </div>
+              <div className="font-display text-[28px] font-bold text-argus-purple leading-none mt-2">{muts}</div>
+              <div className="font-mono text-[10px] text-argus-muted mt-2 font-medium">variants pre-blocked · zero human input</div>
             </div>
 
             {/* Self-healing history */}
@@ -317,23 +312,25 @@ export default function CommandCenter() {
         </div>
 
         {/* ── BOTTOM: Attack Velocity Timeline + Defense Log ── */}
-        <div className="bg-argus-bg grid grid-cols-2 gap-px overflow-hidden">
+        <div className="grid grid-cols-2 gap-3 overflow-hidden">
           {/* Attack Velocity Timeline */}
-          <div className="flex flex-col overflow-hidden">
-            <div className="px-3 py-2 border-b border-argus-border shrink-0">
-              <div className="font-mono text-[8px] tracking-[0.2em] text-argus-muted flex items-center gap-1.5">
-                <div className="w-1 h-1 rounded-full bg-argus-red animate-pulse-fast" />
+          <div className="bg-argus-panel flex flex-col overflow-hidden rounded-[10px] shadow-[0_1px_3px_rgba(15,28,46,0.08),0_4px_12px_rgba(15,28,46,0.04)]">
+            <div className="px-4 py-3 border-b border-argus-input shrink-0 flex items-center">
+              <span className="inline-block w-[3px] h-[14px] bg-argus-red mr-2"></span>
+              <div className="font-mono text-[11px] font-medium tracking-[0.12em] text-argus-secondary uppercase">
                 ATTACK VELOCITY · 5MIN
               </div>
             </div>
-            <div className="flex-1 p-2 overflow-hidden flex items-center">
+            <div className="flex-1 p-4 overflow-hidden flex items-center pb-8 pt-6">
               <ErrorBoundary label="ATTACK TIMELINE">
                 <AttackTimeline velocity={threatVelocity} />
               </ErrorBoundary>
             </div>
           </div>
           {/* Defense Log */}
-          <DefenseLog entries={defenseLog} />
+          <div className="bg-argus-panel rounded-[10px] shadow-[0_1px_3px_rgba(15,28,46,0.08),0_4px_12px_rgba(15,28,46,0.04)] overflow-hidden">
+            <DefenseLog entries={defenseLog} />
+          </div>
         </div>
       </div>
     </div>

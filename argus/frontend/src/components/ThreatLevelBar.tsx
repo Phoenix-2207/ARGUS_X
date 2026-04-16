@@ -5,30 +5,34 @@ interface ThreatLevelBarProps {
 }
 
 const LEVELS = ['MINIMAL', 'LOW', 'MODERATE', 'ELEVATED', 'HIGH', 'CRITICAL'];
-const LEVEL_COLORS = ['#00e676', '#69f0ae', '#ffab00', '#ff6d00', '#ff1744', '#ff1744'];
+const LEVEL_COLORS = ['#16A34A', '#16A34A', '#D97706', '#EA580C', '#DC2626', '#DC2626'];
 
 function ThreatLevelBarInner({ level }: ThreatLevelBarProps) {
   const idx = Math.min(level, 5);
-  const pct = ((level + 1) / 6) * 100;
   return (
     <div>
-      <div className="flex justify-between mb-1.5">
-        <span className="font-mono text-[8px] text-argus-muted tracking-[0.15em]">
+      <div className="flex justify-between items-center mb-2 pb-1 border-b border-argus-input">
+        <div className="font-mono text-[11px] tracking-[0.12em] text-argus-secondary font-medium flex items-center">
+          <span className="inline-block w-[3px] h-[14px] mr-2" style={{ background: LEVEL_COLORS[idx] }}></span>
           THREAT LEVEL
-        </span>
-        <span className="font-mono text-[9px] font-bold" style={{ color: LEVEL_COLORS[idx] }}>
+        </div>
+        <span className="font-mono text-[11px] font-bold" style={{ color: LEVEL_COLORS[idx] }}>
           {LEVELS[idx]}
         </span>
       </div>
-      <div className="h-1 bg-argus-input rounded-sm overflow-hidden">
-        <div
-          className="h-full rounded-sm transition-all duration-1000"
-          style={{
-            width: `${pct}%`,
-            background: LEVEL_COLORS[idx],
-            boxShadow: `0 0 8px ${LEVEL_COLORS[idx]}66`,
-          }}
-        />
+      <div className="flex gap-[2px] h-2 w-full pt-1">
+        {Array.from({ length: 10 }, (_, i) => {
+          const isFilled = i < level + 1;
+          return (
+            <div
+              key={i}
+              className="flex-1 h-full rounded-[1px] transition-colors duration-500"
+              style={{
+                background: isFilled ? LEVEL_COLORS[idx] : '#EBF0F6',
+              }}
+            />
+          );
+        })}
       </div>
     </div>
   );

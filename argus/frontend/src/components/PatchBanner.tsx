@@ -25,57 +25,41 @@ interface PatchBannerProps {
 export const PatchBanner = memo(function PatchBanner({ patch, visible }: PatchBannerProps) {
   if (!visible || !patch) return null;
 
-  const color = THREAT_COLORS[patch.type] || '#00e676';
-
   return (
     <div
-      className="absolute top-[52px] left-1/2 -translate-x-1/2 z-[200] w-[min(560px,90vw)] rounded-[10px] p-3.5 px-[18px] backdrop-blur-[12px] animate-[slideDown_0.35s_ease-out]"
-      style={{
-        background: 'rgba(0,230,118,0.06)',
-        border: '1px solid rgba(0,230,118,0.25)',
-        boxShadow: '0 8px 32px rgba(0,230,118,0.12)',
-      }}
+      className="absolute top-0 left-0 right-0 z-[200] w-full bg-[#EFF6FF] border-b border-[#BFDBFE] animate-[slideDown_0.35s_ease-out] shadow-[0_2px_8px_rgba(26,115,232,0.05)]"
       role="alert"
     >
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-2.5">
-        <div
-          className="w-2 h-2 rounded-full bg-argus-green animate-pulse-fast"
-          style={{ boxShadow: '0 0 10px #00e676' }}
-        />
-        <div className="font-display text-[11px] font-bold text-argus-green tracking-[0.15em]">
-          🛡️ VULNERABILITY PATCHED
-        </div>
-        <div className="ml-auto font-mono text-[7px] text-argus-muted">
-          SELF-HEALING · {patch.type.replace(/_/g, ' ')} · TIER {patch.tier}
-        </div>
-      </div>
-
-      {/* Before / After */}
-      <div className="grid grid-cols-2 gap-2.5">
-        {/* Before */}
-        <div>
-          <div className="font-mono text-[7px] text-argus-red tracking-[0.15em] mb-1">
-             ✕ BYPASS DETECTED
+      <div className="max-w-6xl mx-auto px-4 py-2 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <div className="font-display text-[11px] font-medium text-argus-blue tracking-wide">
+            🛡 Self-healing patch applied
           </div>
-          <div
-            className="font-mono text-[8px] text-[#7a9ac0] rounded-[5px] p-1.5 px-2 leading-relaxed max-h-[52px] overflow-hidden break-all"
-            style={{
-              background: 'rgba(255,23,68,0.06)',
-              border: `1px solid ${color}25`,
-            }}
-          >
-            {patch.before_preview}
+          <div className="hidden md:block font-mono text-[10px] text-argus-blue opacity-70">
+            · {patch.type.replace(/_/g, ' ')} · TIER {patch.tier}
           </div>
         </div>
 
-        {/* After */}
-        <div>
-          <div className="font-mono text-[7px] text-argus-green tracking-[0.15em] mb-1">
-            ✓ PATCH APPLIED
+        {/* Before / After */}
+        <div className="flex flex-1 gap-4 overflow-hidden w-full max-w-[800px]">
+          {/* Before */}
+          <div className="flex-1 truncate">
+            <span className="font-mono text-[9px] text-argus-red tracking-wider mr-2 font-bold">
+               ✕ BYPASS
+            </span>
+            <span className="font-mono text-[10px] text-argus-secondary">
+              {patch.before_preview}
+            </span>
           </div>
-          <div className="font-mono text-[8px] text-[#7a9ac0] bg-[rgba(0,230,118,0.06)] border border-[rgba(0,230,118,0.15)] rounded-[5px] p-1.5 px-2 leading-relaxed max-h-[52px] overflow-hidden">
-            {patch.after}
+
+          {/* After */}
+          <div className="flex-1 truncate">
+            <span className="font-mono text-[9px] text-argus-green tracking-wider mr-2 font-bold">
+              ✓ PATCHED
+            </span>
+            <span className="font-mono text-[10px] text-argus-secondary">
+              {patch.after}
+            </span>
           </div>
         </div>
       </div>

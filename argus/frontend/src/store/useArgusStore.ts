@@ -4,6 +4,15 @@
 // Slices: attacks (WS feed), stats (polling), ui (alerts, patches, loading)
 // ═══════════════════════════════════════════════════════════════════════
 
+import {
+  MOCK_ATTACKS,
+  MOCK_DEFENSE_LOG,
+  MOCK_SOPH_HISTORY,
+  MOCK_LAT_HISTORY,
+  MOCK_STATS,
+  MOCK_VELOCITY
+} from '../mockData';
+
 import { create } from 'zustand';
 import type { AttackEvent, LogEntry, AlertEntry } from '../types';
 import type { PatchEvent } from '../components/PatchBanner';
@@ -77,12 +86,12 @@ export type ArgusStore = AttackSlice & StatsSlice & UISlice;
 
 export const useArgusStore = create<ArgusStore>()((set) => ({
   // ── Attack Slice ────────────────────────────────────────────────
-  attacks: [],
-  defenseLog: [],
-  lastUpdated: null,
-  sophHistory: [],
-  latHistory: [],
-  connected: false,
+  attacks: MOCK_ATTACKS,
+  defenseLog: MOCK_DEFENSE_LOG,
+  lastUpdated: new Date(),
+  sophHistory: MOCK_SOPH_HISTORY,
+  latHistory: MOCK_LAT_HISTORY,
+  connected: true,
 
   addAttack: (atk) =>
     set((s) => ({ attacks: [atk, ...s.attacks.slice(0, 59)] })),
@@ -106,17 +115,17 @@ export const useArgusStore = create<ArgusStore>()((set) => ({
   setLastUpdated: (date) => set({ lastUpdated: date }),
 
   // ── Stats Slice ─────────────────────────────────────────────────
-  total: 0,
-  blocked: 0,
-  muts: 0,
-  bypasses: 0,
+  total: MOCK_STATS.total,
+  blocked: MOCK_STATS.blocked,
+  muts: MOCK_STATS.muts,
+  bypasses: MOCK_STATS.bypasses,
   patched: 0,
-  tier: 1,
-  threatLevel: 1,
-  campaignCount: 0,
-  threatVelocity: {},
+  tier: MOCK_STATS.tier,
+  threatLevel: MOCK_STATS.threatLevel,
+  campaignCount: MOCK_STATS.campaignCount,
+  threatVelocity: MOCK_VELOCITY,
   redAgentRunning: false,
-  loading: true,
+  loading: false,
 
   updateStats: (data) => set((s) => ({ ...s, ...data })),
   setLoading: (val) => set({ loading: val }),

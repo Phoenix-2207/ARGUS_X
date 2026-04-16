@@ -5,20 +5,18 @@ interface SophMeterProps {
 }
 
 function SophMeterInner({ score }: SophMeterProps) {
-  const color = score <= 3 ? '#00e676' : score <= 6 ? '#ffab00' : '#ff1744';
+  const color = score <= 3 ? '#0D9B8A' : score <= 6 ? '#D97706' : '#DC2626';
+  const pct = Math.min((score / 10) * 100, 100);
+
   return (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: 10 }, (_, i) => (
+    <div className="flex items-center gap-2 w-full">
+      <div className="flex-1 h-[3px] bg-argus-input rounded-full overflow-hidden">
         <div
-          key={i}
-          className="w-[7px] h-2.5 rounded-sm transition-colors duration-300"
-          style={{
-            background: i < score ? color : '#1a2845',
-            boxShadow: i < score ? `0 0 6px ${color}66` : 'none',
-          }}
+          className="h-full rounded-full transition-all duration-300"
+          style={{ width: `${pct}%`, background: color }}
         />
-      ))}
-      <span className="font-mono text-[10px] ml-1" style={{ color }}>
+      </div>
+      <span className="font-mono text-[10px] shrink-0" style={{ color }}>
         {score}/10
       </span>
     </div>

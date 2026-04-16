@@ -21,7 +21,6 @@ export function MiniClusterMap({ attacks }: MiniClusterMapProps) {
   const nodesRef = useRef<Record<string, ClusterNode>>({});
   const [size, setSize] = useState({ width: 180, height: 120 });
 
-  // Responsive sizing via ResizeObserver
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -46,7 +45,6 @@ export function MiniClusterMap({ attacks }: MiniClusterMapProps) {
 
     const MAX_NODES = 80;
 
-    // Clear all nodes when no attacks — prevent stale state from prior renders
     if (attacks.length === 0) {
       nodesRef.current = {};
     }
@@ -61,7 +59,6 @@ export function MiniClusterMap({ attacks }: MiniClusterMapProps) {
       SOCIAL_ENG: { x: W * 0.85, y: H * 0.65 },
     };
 
-    // Seed nodes from attacks
     attacks.slice(-40).forEach((a) => {
       const c = centers[a.type] || { x: W * 0.5, y: H * 0.5 };
       const id = String(a.id);
@@ -73,20 +70,18 @@ export function MiniClusterMap({ attacks }: MiniClusterMapProps) {
           vy: (Math.random() - 0.5) * 0.5,
           type: a.type,
           r: 3 + a.tier * 0.8,
-          color: THREAT_COLORS[a.type] || '#888',
+          color: THREAT_COLORS[a.type] || '#B8C9D9',
           cx: c.x,
           cy: c.y,
         };
       }
     });
 
-    // Prune stale nodes
     const activeIds = new Set(attacks.slice(-40).map((a) => String(a.id)));
     Object.keys(nodesRef.current).forEach((id) => {
       if (!activeIds.has(id)) delete nodesRef.current[id];
     });
 
-    // Hard cap: evict oldest nodes if over limit to prevent memory leak
     const allKeys = Object.keys(nodesRef.current);
     if (allKeys.length > MAX_NODES) {
       const toEvict = allKeys.slice(0, allKeys.length - MAX_NODES);
@@ -98,22 +93,29 @@ export function MiniClusterMap({ attacks }: MiniClusterMapProps) {
     let animId: number;
     function draw() {
       ctx!.clearRect(0, 0, W, H);
-      ctx!.fillStyle = '#030508';
+      ctx!.fillStyle = '#FFFFFF';
       ctx!.fillRect(0, 0, W, H);
+
+      // Draw connecting lines first
+      Object.values(nodesRef.current).forEach((n) => {
+        ctx!.beginPath();
+        ctx!.moveTo(n.x, n.y);
+        ctx!.lineTo(n.cx, n.cy);
+        ctx!.strokeStyle = '#D1DCE8';
+        ctx!.lineWidth = 1;
+        ctx!.stroke();
+      });
 
       // Cluster halos
       Object.entries(centers).forEach(([type, c]) => {
-        const color = THREAT_COLORS[type] || '#888';
+        const color = THREAT_COLORS[type] || '#B8C9D9';
         ctx!.beginPath();
-        ctx!.arc(c.x, c.y, 35, 0, Math.PI * 2);
-        ctx!.strokeStyle = color + '18';
-        ctx!.lineWidth = 1;
-        ctx!.stroke();
-        ctx!.fillStyle = color + '06';
+        ctx!.arc(c.x, c.y, 4, 0, Math.PI * 2);
+        ctx!.fillStyle = color;
         ctx!.fill();
       });
 
-      // Update + draw nodes
+      // Update + draw nodes (filled circles with white stroke)
       Object.values(nodesRef.current).forEach((n) => {
         n.vx += (n.cx - n.x) * 0.003;
         n.vy += (n.cy - n.y) * 0.003;
@@ -121,10 +123,14 @@ export function MiniClusterMap({ attacks }: MiniClusterMapProps) {
         n.vy *= 0.96;
         n.x = Math.max(n.r, Math.min(W - n.r, n.x + n.vx));
         n.y = Math.max(n.r, Math.min(H - n.r, n.y + n.vy));
+        
         ctx!.beginPath();
         ctx!.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx!.fillStyle = n.color + 'cc';
+        ctx!.fillStyle = n.color;
         ctx!.fill();
+        ctx!.strokeStyle = '#FFFFFF';
+        ctx!.lineWidth = 1.5;
+        ctx!.stroke();
       });
 
       animId = requestAnimationFrame(draw);
@@ -144,4 +150,3 @@ export function MiniClusterMap({ attacks }: MiniClusterMapProps) {
     </div>
   );
 }
-
